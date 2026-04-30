@@ -1,0 +1,166 @@
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from groq import Groq
+import io
+import re
+
+# Initialize Groq client
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+st.set_page_config(page_title="AI Graph Generator", layout="wide")
+
+st.title("📊 AI Graph Generator")
+st.markdown("Upload a CSV, describe the graph you want, and the AI will create it for you!")
+
+# Sidebar for file upload
+with st.sidebar:
+    st.header("📁 Upload Data")
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+        st.success(f"✅ Loaded: {uploaded_file.name}")
+        st.info(f"📊 {df.shape[0]} rows, {df.shape[1]} columns")
+        
+        with st.expander("View Data Preview"):
+            st.dataframe(df.head(10))
+
+# Main area
+if uploaded_file:
+    # Show available columns
+    st.subheader("📋 Available Columns")
+    
+    # Get column info
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    text_cols = df.select_dtypes(include=['object']).columns.tolist()
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**📊 Numeric columns:**", ", ".join(numeric_cols) if numeric_cols else "None")
+    with col2:
+        st.write("**📝 Text/Categorical:**", ", ".join(text_cols) if text_cols else "None")
+    
+    # User input
+    user_prompt = st.text_area(
+        "💬 What graph do you want?",
+        placeholder=f"Examples:\n- Create a bar chart of {numeric_cols[0] if numeric_cols else 'a numeric column'}\n- Make a histogram of {numeric_cols[0] if numeric_cols else 'a numeric column'}\n- Create a scatter plot of {numeric_cols[0] if numeric_cols else 'x'} vs {numeric_cols[1] if len(numeric_cols) > 1 else 'y'}\n- Show correlation heatmap",
+        height=120
+    )
+    
+    if st.button("🎨 Generate Graph", type="primary"):
+        if not user_prompt:
+            st.warning("Please describe what graph you want!")
+        else:
+            with st.spinner("🤖 AI is generating your graph..."):
+                # Prepare column information
+                columns_str = ", ".join(df.columns[:10])  # First 10 columns
+                numeric_str = ", ".join(numeric_cols[:5]) if numeric_cols else "none"
+                
+                # Strict prompt - tell AI NOT to create new dataframe
+                ai_prompt = f"""
+                VERY IMPORTANT: The dataframe 'df' already exists and is loaded with data.
+                DO NOT create a new dataframe. DO NOT use pd.DataFrame().
+                Use the existing variable 'df' which already contains the data.
+                
+                Current dataframe 'df' has these columns: {columns_str}
+                Numeric columns available: {numeric_str}
+                
+                User request: {user_prompt}
+                
+                Write Python code using the existing 'df' variable to create the visualization.
+                Use ONLY these imports that are already available: import matplotlib.pyplot as plt, import seaborn as sns
+                Add plt.show() at the end.
+                Return ONLY the code, no explanations.
+                """
+                
+                try:
+                    # Get code from AI
+                    response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": "You generate visualization code. The dataframe 'df' already exists with data. NEVER create a new dataframe. Return ONLY Python code."},
+                            {"role": "user", "content": ai_prompt}
+                        ],
+                        temperature=0.3,
+                        max_tokens=800
+                    )
+                    
+                    code = response.choices[0].message.content
+                    # Clean up code
+                    code = code.replace("```python", "").replace("```", "").strip()
+                    
+                    # Remove any dataframe creation lines
+                    lines = code.split('\n')
+                    clean_lines = []
+                    for line in lines:
+                        # Skip lines that create a new dataframe
+                        if 'pd.DataFrame' in line or 'df = pd.DataFrame' in line or 'df = {' in line:
+                            continue  # Skip this line
+                        # Skip import lines since they're already imported
+                        if line.strip().startswith('import ') or line.strip().startswith('from '):
+                            continue
+                        clean_lines.append(line)
+                    
+                    code = '\n'.join(clean_lines)
+                    
+                    # Ensure df is used
+                    if 'df' not in code and len(clean_lines) > 0:
+                        # Add code to use df if missing
+                        code = "plt.figure(figsize=(10,6))\n" + code
+                    
+                    # Show the generated code
+                    with st.expander("📝 View Generated Code"):
+                        st.code(code, language="python")
+                    
+                    # Execute and display graph
+                    st.subheader("📈 Your Graph")
+                    
+                    # Clear any existing figures
+                    plt.clf()
+                    plt.close('all')
+                    
+                    # Create safe execution environment
+                    exec_globals = {
+                        'df': df,  # Your actual uploaded dataframe
+                        'plt': plt,
+                        'sns': sns,
+                        'pd': pd,
+                        'np': np,
+                        '__builtins__': __builtins__
+                    }
+                    
+                    # Execute the code
+                    exec(code, exec_globals)
+                    
+                    # Display the plot
+                    if plt.get_fignums():
+                        st.pyplot(plt)
+                        st.success("✅ Graph generated successfully!")
+                    else:
+                        st.warning("No plot was created. Try a different description.")
+                    
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+                    st.info("Try a simpler request. Example: 'Create a bar chart of " + (numeric_cols[0] if numeric_cols else "a numeric column") + "'")
+                    
+else:
+    # No file uploaded yet
+    st.info("👈 Please upload a CSV file in the sidebar to get started")
+    
+    # Example
+    with st.expander("📖 How to use"):
+        st.markdown(f"""
+        **Simple steps:**
+        1. Upload a CSV file
+        2. Describe your graph
+        3. Click Generate Graph
+        
+        **Try these prompts:**
+        - "Create a bar chart of {numeric_cols[0] if 'numeric_cols' in dir() and numeric_cols else 'a numeric column'}"
+        - "Make a histogram"
+        - "Show a scatter plot"
+        - "Create a heatmap"
+        """)
