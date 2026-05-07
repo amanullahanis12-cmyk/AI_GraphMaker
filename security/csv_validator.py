@@ -28,12 +28,7 @@ class CSVValidator:
     @staticmethod
     def validate_dataframe(df: pd.DataFrame) -> Tuple[bool, str]:
         """Validate DataFrame for safe operations"""
-        # Check size limits
-        if len(df) > SecurityConfig.MAX_DF_ROWS:
-            return False, f"DataFrame exceeds {SecurityConfig.MAX_DF_ROWS} rows limit"
-        
-        if len(df.columns) > SecurityConfig.MAX_DF_COLUMNS:
-            return False, f"DataFrame exceeds {SecurityConfig.MAX_DF_COLUMNS} columns limit"
+
         
         # Check for suspicious column names
         suspicious_patterns = ['eval', 'exec', '__', 'system', 'cmd', 'shell']

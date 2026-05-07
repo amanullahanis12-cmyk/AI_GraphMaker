@@ -38,7 +38,9 @@ class SecureGraphGenerator:
         
         # Build prompt
         prompt = f"""
-        You are a secure data visualization expert. Generate ONLY Python code for the following request.
+        VERY IMPORTANT: The dataframe 'df' already exists and is loaded with data.
+        DO NOT create a new dataframe. DO NOT use pd.DataFrame() or df = {{}}.
+        Use the existing variable 'df' which already contains the data.
         
         DATASET INFORMATION:
         - Shape: {df_info['shape']}
@@ -51,15 +53,15 @@ class SecureGraphGenerator:
         PREVIOUS CONTEXT: {context}
         
         REQUIREMENTS:
-        1. Use ONLY the following imports: pandas as pd, numpy as np, matplotlib.pyplot as plt, seaborn as sns
-        2. The dataframe variable is ALWAYS 'df'
-        3. Use plt.figure(figsize=(10, 6)) for each plot
-        4. Add proper titles, labels, and legends
-        5. Use plt.tight_layout()
-        6. Return ONLY the code, no explanations
-        7. DO NOT use: exec, eval, open, file operations, system commands
-        8. Handle missing data gracefully
-        9. Add comments to explain the visualization
+        1. Use ONLY the existing 'df' variable
+        2. Use matplotlib.pyplot as plt and seaborn as sns
+        3. Create a clear, well-labeled visualization
+        4. Handle data type conversions automatically
+        5. Add proper titles, labels, and legends
+        6. Use plt.tight_layout() for clean display
+        7. Add plt.show() at the end
+        8. Return ONLY the Python code, no explanations
+        9. DO NOT include any markdown formatting
         
         GENERATE PYTHON CODE:
         """
@@ -67,10 +69,10 @@ class SecureGraphGenerator:
         try:
             response = self.client.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": "You are a Python data visualization expert. Return ONLY executable Python code."},
+                    {"role": "system", "content": "You are a Python data visualization expert. Return ONLY executable Python code. NEVER create a new dataframe. ALWAYS use the existing 'df' variable."},
                     {"role": "user", "content": prompt}
                 ],
-                model="llama-3.3-70b-versatile",
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
                 temperature=0.3,
                 max_tokens=2000
             )
@@ -117,7 +119,7 @@ class SecureGraphGenerator:
                 'round': round,
             },
             'pd': pd,
-            'np': __import__('numpy'),
+            'np': np,
             'plt': plt,
             'sns': sns,
             'df': df.copy(),  # Work on copy to prevent modification
