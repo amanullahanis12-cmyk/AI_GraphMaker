@@ -1,3 +1,4 @@
+# tutorio/security/config.py
 """
 Security configuration and constants
 """
@@ -14,32 +15,40 @@ class SecurityConfig:
     
     # Dangerous patterns to block
     DANGEROUS_PATTERNS = [
-        r'__.*__',                     # Dunder methods
-        r'(exec|eval|compile)\s*\(',   # Code execution
-        r'import\s+(os|sys|subprocess|socket|requests)',  # Dangerous imports
-        r'from\s+(os|sys|subprocess|socket|requests)\s+import',  # Dangerous imports
-        r'open\s*\(',                  # File operations
-        r'__import__\s*\(',            # Dynamic imports
-        r'globals\s*\(',               # Globals access
-        r'locals\s*\(',                # Locals access
-        r'getattr\s*\(',               # Attribute access
-        r'setattr\s*\(',               # Attribute modification
-        r'delattr\s*\(',               # Attribute deletion
-        r'(rm|del|remove|delete)\s+',  # Deletion operations
-        r'subprocess\.',               # Subprocess calls
-        r'os\.',                       # OS operations
-        r'socket\.',                   # Network operations
-        r'eval\s*\(',                  # Eval calls
+        r'__.*__',
+        r'(exec|eval|compile)\s*\(',
+        r'import\s+(os|sys|subprocess|socket|requests|ctypes|multiprocessing)',
+        r'from\s+(os|sys|subprocess|socket|requests|ctypes)\s+import',
+        r'open\s*\(',
+        r'__import__\s*\(',
+        r'globals\s*\(',
+        r'locals\s*\(',
+        r'getattr\s*\(',
+        r'setattr\s*\(',
+        r'delattr\s*\(',
+        r'subprocess\.',
+        r'os\.',
+        r'socket\.',
+        r'chr\s*\(',
+        r'ord\s*\(',
+        r'base64',
+        r'codecs',
     ]
     
-    # Excel formula injection patterns for CSV validation
+    # CSV injection patterns
     CSV_INJECTION_PATTERNS = [
-        r'^=', r'^\+', r'^\-', r'^@',
-        r'=cmd', r'=powershell', r'=python',
-        r'!', r'`', r'\$'
+        r'^[\s]*=',
+        r'^[\s]*\+',
+        r'^[\s]*\-',
+        r'^[\s]*@',
+        r'DDE',
+        r'Excel\.Application',
+        r'Shell\.Application',
+        r'WScript\.Shell'
     ]
     
-    MAX_CODE_LENGTH = 5000  # Characters
+    MAX_CODE_LENGTH = 5000
+    MAX_PROMPT_LENGTH = 1000
     TIMEOUT_SECONDS = 30
     MAX_DF_ROWS = 100000
     MAX_DF_COLUMNS = 100

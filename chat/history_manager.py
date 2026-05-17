@@ -1,6 +1,5 @@
-"""
-Chat history management using Streamlit session state
-"""
+# tutorio/chat/history_manager.py
+"""Chat history management using Streamlit session state"""
 
 import streamlit as st
 import json
@@ -30,8 +29,11 @@ class ChatHistoryManager:
     @staticmethod
     def add_message(role: str, content: str, metadata: Dict = None):
         """Add a message to chat history"""
+        # Auto‑initialize if not already done (safety net)
+        ChatHistoryManager.initialize()
+        
         message = {
-            'role': role,  # 'user' or 'assistant'
+            'role': role,
             'content': content,
             'timestamp': datetime.now().isoformat(),
             'conversation_id': st.session_state.conversation_id,
