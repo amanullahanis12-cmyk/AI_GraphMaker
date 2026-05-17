@@ -1,2 +1,33 @@
-.streamlit/secrets.toml"__pycache__/" 
-"*.pyc" 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit secrets (CRITICAL - contains API key)
+.streamlit/secrets.toml
+secrets.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+*.db
+.DS_Store
+.cache/
+.graph_cache/
