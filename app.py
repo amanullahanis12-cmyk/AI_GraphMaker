@@ -169,6 +169,7 @@ def display_downloads():
 # UI Setup
 st.set_page_config("AI Data Analyst", "🤖", "wide")
 st.title("🤖 AI Data Analyst")
+st.caption("Coded by DeepSeek")
 st.caption("Upload CSV → Describe Graph → Get Insights")
 
 init_session()
